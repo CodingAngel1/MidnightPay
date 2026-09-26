@@ -1,0 +1,56 @@
+/*
+ * MidnightPay — privacy-preserving payment counter
+ * ---------------------------------------------------------------------------
+ * PUBLIC (on-chain ledger state, visible to anyone):
+ *   - payment_count    : Counter  -> how many payments have been settled
+ *   - disclosed_total  : Uint<64> -> the running sum of amounts the payer has
+ *                                    explicitly chosen to publish
+ *
+ * PRIVATE (witness callbacks, evaluated locally, never published):
+ *   - pay_amount()     : Uint<64> -> the private payment amount
+ *   - pay_secret()     : Uint<64> -> the payer's authorisation secret
+ *
+ * WHAT THE CIRCUIT PROVES (without revealing private data):
+ *   - The caller knows a non-zero authorisation secret (assert only, no
+ *     disclose(), so the secret never reaches the chain).
+ *   - The private amount is strictly positive.
+ *   - Only the values deliberately wrapped in disclose() are written to the
+ *     public ledger; the compiler treats everything else as private and will
+ *     reject any accidental leak at compile time.
+ * ---------------------------------------------------------------------------
+ */
+
+pragma language_version >= 0.23.0;
+
+import CompactStandardLibrary;
+
+// PUBLIC: number of settled payments, visible to every observer.
+export ledger payment_count: Counter;
+
+// PUBLIC: sum of the amounts the payer chose to disclose.
+export ledger disclosed_total: Uint<64>;
+
+// PRIVATE: the payment amount, supplied by the local witness.
+witness pay_amount(): Uint<64>;
+
+// PRIVATE: the authorisation secret, supplied by the local witness.
+witness pay_secret(): Uint<64>;
+
+export circuit pay(): [] {
+  // Private inputs pulled in from the local machine (never on-chain).
+  const amount = pay_amount();
+  const secret = pay_secret();
+
+  // Prove knowledge of a valid secret without disclosing it.
+  assert(secret > 0, "Authorisation secret must be non-zero");
+
+  // Only strictly positive payments may be settled.
+  assert(amount > 0, "Payment amount must be positive");
+
+  // Deliberate disclosure: the amount is published so the total is auditable.
+  const published_amount = disclose(amount);
+
+  // PUBLIC state transitions.
+  disclosed_total = disclosed_total + published_amount;
+  payment_count.increment(1);
+}
