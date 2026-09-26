@@ -48,9 +48,11 @@ export circuit pay(): [] {
   assert(amount > 0, "Payment amount must be positive");
 
   // Deliberate disclosure: the amount is published so the total is auditable.
-  const published_amount = disclose(amount);
+  // disclose() widens its result to 65 bits, and adding two Uint<64> values
+  // widens again, so both are cast back to Uint<64> before touching the ledger.
+  const published_amount: Uint<64> = disclose(amount);
 
   // PUBLIC state transitions.
-  disclosed_total = disclosed_total + published_amount;
+  disclosed_total = (disclosed_total + published_amount) as Uint<64>;
   payment_count.increment(1);
 }
