@@ -11,3 +11,6 @@ deploy*.log
 .DS_Store
 .env
 .env.local
+
+# local progress notes (never commit)
+PROGRESS.md
