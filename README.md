@@ -70,6 +70,8 @@ explicitly publish.
 git clone https://github.com/CodingAngel1/MidnightPay.git
 cd MidnightPay
 npm install
+# npm install also runs scripts/patch-node-client.mjs, which fixes a
+# socket race in the wallet SDK that otherwise aborts every submission.
 
 # Compact compiler — Linux/macOS native install
 #   curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
