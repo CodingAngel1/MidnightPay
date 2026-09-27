@@ -3,7 +3,11 @@ dist/
 .midnight-state.json
 .midnight-wallet-state
 .midnight-wallet-state/
+midnight-level-db/
+midnight-level-db
 *.log
+deploy-mp.log
+deploy*.log
 .DS_Store
 .env
 .env.local

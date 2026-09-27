@@ -9,6 +9,7 @@
     "build": "npx tsc --noEmit || true",
     "setup": "npx tsx src/setup.ts",
     "deploy": "npx tsx src/deploy.ts",
+    "verify": "npx tsx src/verify.ts",
     "cli": "npx tsx src/cli.ts",
     "check-balance": "npx tsx src/check-balance.ts",
     "network": "npx tsx src/network.ts",

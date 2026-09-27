@@ -6,7 +6,7 @@
 
 | Network  | Address                          |
 |----------|----------------------------------|
-| Preview  | [PASTE ADDRESS AFTER DEPLOY]     |
+| Preview  | `522079c2760b58d0e098c5a2d8f04a1d6e6340f8baf7a190376204378307415d` |
 | Preprod  | [PASTE ADDRESS AFTER DEPLOY]     |
 
 ## What This Does
@@ -50,7 +50,7 @@ explicitly publish.
 - **Midnight network** — privacy-first L1 for zero-knowledge smart contracts
 - **Compact language** — the contract language (`contracts/counter.compact`)
 - **Node.js v22+** — runtime for compile/deploy/test scripts
-- **Docker** — proof server + local devnet (`midnightnetwork/proof-server`)
+- **Docker** — proof server + local devnet (`midnightntwrk/proof-server:8.1.0`)
 - **Compact compiler** — `compact compile` generates `managed/counter/`
 - **midnight.js SDK** — `@midnight-ntwrk/compact-runtime`, `@midnight-ntwrk/midnight-js-*`
 
@@ -60,7 +60,7 @@ explicitly publish.
 |-------------|-------|
 | Node.js 22+ | `node --version` |
 | Docker Desktop | Running daemon, `docker ps` succeeds |
-| Compact compiler | `compact --version` prints a version number (Linux/macOS; on Windows use WSL) |
+| Compact compiler | `compact --version` prints a version number (Linux/macOS). On Windows there is no native binary — `npm run compile` falls back to compiling inside Docker automatically. |
 | Git | For cloning and committing |
 | Midnight faucet funds | Preview faucet: https://midnight-tmnight-preview.nethermind.dev/ |
 
@@ -71,23 +71,30 @@ git clone https://github.com/CodingAngel1/MidnightPay.git
 cd MidnightPay
 npm install
 
-# Compact compiler (Linux/macOS; inside WSL on Windows)
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
-compact update
+# Compact compiler — Linux/macOS native install
+#   curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
+#   compact update 0.31.1
+# Windows: skip the above. `npm run compile` detects the missing compiler and
+# builds/runs the container defined in scripts/Dockerfile.compact instead.
 
-# Proof server
-docker pull midnightnetwork/proof-server
-docker run -d -p 6300:6300 midnightnetwork/proof-server
+# Proof server (pinned to 8.1.0 to match the Midnight.js 4.1.1 SDK)
+docker pull midnightntwrk/proof-server:8.1.0
+docker run -d --name midnight-proof-server -p 6300:6300 midnightntwrk/proof-server:8.1.0
 
 # Compile the contract -> managed/counter/
 npm run compile
 
-# Deploy to the preview testnet
+# Deploy to the preview testnet (prints the wallet address, then waits for the faucet)
 NODE_OPTIONS="--max-old-space-size=12288" npm run deploy -- --network preview
 
 # Select the active network for later commands
 npm run network preview
 ```
+
+> **Compiler version is pinned to `0.31.1`.** It is the release whose
+> `runtime-version` is `0.16.0`, which is exactly what `@midnight-ntwrk/compact-runtime`
+> 0.16.0 in `package.json` expects. Compiling with a newer compiler (0.34.0 emits
+> runtime 0.19.0) makes the test suite fail with a version-mismatch error.
 
 ## Run Tests
 
@@ -103,6 +110,27 @@ The suite has two layers:
 - **Compiled layer** — runs the real generated circuits in the Compact runtime
   simulator: initial state, state transitions, rejected inputs, and that private
   inputs never reach the public ledger.
+
+## Verify the Deployment
+
+Read the public ledger back from the indexer to prove the contract is live:
+
+```bash
+npm run verify
+```
+
+Expected output for a freshly deployed contract:
+
+```
+network : preview
+address : 522079c2760b58d0e098c5a2d8f04a1d6e6340f8baf7a190376204378307415d
+ledger  : { payment_count: '0', disclosed_total: '0' }
+RESULT: contract is live and readable
+```
+
+`payment_count` and `disclosed_total` are the two public ledger fields — both
+start at zero and only change when `pay()` settles a payment. Nothing else about
+a payment ever reaches the chain.
 
 ## Initial Idea
 
