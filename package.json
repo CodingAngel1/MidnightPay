@@ -5,6 +5,7 @@
   "description": "MidnightPay — privacy-preserving payment counter built with the Compact language",
   "license": "MIT",
   "scripts": {
+    "postinstall": "node scripts/patch-node-client.mjs",
     "compile": "node scripts/compile.mjs contracts/counter.compact managed/counter",
     "build": "npx tsc --noEmit || true",
     "setup": "npx tsx src/setup.ts",
