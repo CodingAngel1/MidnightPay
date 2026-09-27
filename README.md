@@ -136,8 +136,33 @@ a payment ever reaches the chain.
 
 ## Initial Idea
 
-[LEAVE PLACEHOLDER — I will fill this in manually]
+Most payment systems treat "who paid how much" as a single blob of data that
+everyone gets to see. MidnightPay started from a simpler question: **what if the
+fact of a payment could be public while the details stayed with the payer?**
+
+The first iteration was just a counter. The interesting part turned out to be
+the split — a public ledger that only ever learns *how many* payments settled
+and *which* amounts the payer deliberately published, while the amount itself
+and the payer's authorisation secret live exclusively inside private witnesses.
+The zero-knowledge circuit proves the rules were followed (positive amount,
+non-zero secret) without ever revealing either value.
+
+That split is the whole product: privacy by default, disclosure by choice —
+payment settlement where the payer, not the chain, decides what the world gets to know.
 
 ## Screenshots
 
-[LEAVE PLACEHOLDER — I will add compile output and contract address screenshots]
+**Compile** — `npm run compile` (compiler pinned to 0.31.1, Docker fallback on Windows):
+
+![npm run compile](docs/compile.png)
+
+**Tests** — `npm test` (9/9 passing, source + compiled-circuit layers):
+
+![npm test](docs/tests.png)
+
+**On-chain verification** — `npm run verify` (public ledger read back from the preview indexer):
+
+![npm run verify](docs/verify.png)
+
+> Regenerate with `node scripts/screenshots.mjs` (uses headless Chrome) so the
+> images always match the current output.
