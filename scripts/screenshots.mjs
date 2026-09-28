@@ -1,5 +1,10 @@
-// Renders the real compile/test/verify outputs as terminal-styled pages and
-// captures each one as a PNG in docs/ using headless Chrome.
+// Screenshot docs/*.png from REAL command output.
+//
+// Runs the three commands the README documents, captures their true combined
+// stdout+stderr, and renders that captured text as a terminal-styled page
+// which headless Chrome/Edge photographs. Nothing is hardcoded: if the
+// commands change their output (or fail), the images change with them —
+// and if any command exits non-zero the script refuses to write that image.
 //
 //   node scripts/screenshots.mjs
 //
@@ -20,67 +25,11 @@ const CHROME_CANDIDATES = [
   'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
 ];
 
+/** The three commands whose real output the README screenshots must show. */
 const SHOTS = [
-  {
-    name: 'compile',
-    title: 'npm run compile',
-    lines: [
-      ['', '> midnightpay@1.0.0 compile'],
-      ['', '> node scripts/compile.mjs contracts/counter.compact managed/counter'],
-      ['', ''],
-      ['dim', '  compact not found on PATH — compiling inside the midnight-compact container...'],
-      ['', ''],
-      ['', 'compact: x86_64-unknown-linux-musl -- 0.31.1 -- already installed'],
-      ['', 'compact: x86_64-unknown-linux-musl -- 0.31.1 -- default.'],
-      ['', 'Compiling 1 circuits:'],
-      ['', '  counter'],
-      ['', ''],
-      ['ok', '  ✓ managed/counter/ written (contract.js, keys/, zkir)'],
-      ['ok', '  ✓ compiled with compactc 0.31.1 (runtime-version 0.16.0)'],
-    ],
-  },
-  {
-    name: 'tests',
-    title: 'npm test',
-    lines: [
-      ['', '> midnightpay@1.0.0 test'],
-      ['', '> npx tsx --test tests/counter.test.ts'],
-      ['', ''],
-      ['head', '▶ MidnightPay — contract source'],
-      ['pass', '  ✔ declares public ledger state for the payment counter (18.2574ms)'],
-      ['pass', '  ✔ declares private witnesses used as circuit inputs (1.7093ms)'],
-      ['pass', '  ✔ uses disclose() deliberately and never discloses the secret (1.9145ms)'],
-      ['pass', '  ✔ documents the public vs private privacy model in a comment block (0.4522ms)'],
-      ['head', '▶ MidnightPay — compiled circuits'],
-      ['pass', '  ✔ initialises an empty ledger: no payments, zero disclosed total (77.9622ms)'],
-      ['pass', '  ✔ state transition: pay() increments the counter and accumulates the disclosed total (50.3255ms)'],
-      ['pass', '  ✔ circuit logic: a zero amount is rejected before any state changes (11.5441ms)'],
-      ['pass', '  ✔ privacy: a zero authorisation secret is rejected without disclosing it (11.2433ms)'],
-      ['pass', '  ✔ privacy: private inputs never appear in the public ledger (25.1724ms)'],
-      ['', ''],
-      ['info', 'ℹ tests 9'],
-      ['info', 'ℹ suites 2'],
-      ['info', 'ℹ pass 9'],
-      ['info', 'ℹ fail 0'],
-      ['info', 'ℹ cancelled 0'],
-      ['info', 'ℹ skipped 0'],
-      ['info', 'ℹ todo 0'],
-      ['info', 'ℹ duration_ms 790.1474'],
-    ],
-  },
-  {
-    name: 'verify',
-    title: 'npm run verify',
-    lines: [
-      ['', '> midnightpay@1.0.0 verify'],
-      ['', '> npx tsx src/verify.ts'],
-      ['', ''],
-      ['', 'network : preprod'],
-      ['', 'address : 1116f337c369f190a8f3838d617e15fd1df9123e8ed268c84e236a367bfbab10'],
-      ['', 'ledger  : { payment_count: \'0\', disclosed_total: \'0\' }'],
-      ['ok', 'RESULT: contract is live and readable'],
-    ],
-  },
+  { name: 'compile', title: 'npm run compile', cmd: 'npm', args: ['run', 'compile'] },
+  { name: 'tests', title: 'npm test', cmd: 'npm', args: ['test'] },
+  { name: 'verify', title: 'npm run verify', cmd: 'npm', args: ['run', 'verify'] },
 ];
 
 const COLORS = {
@@ -89,14 +38,62 @@ const COLORS = {
   head: '#d2a8ff',
   pass: '#3fb950',
   ok: '#3fb950',
+  bad: '#f85149',
   info: '#58a6ff',
 };
+
+/**
+ * Colour a real output line by its actual content (ANSI already stripped).
+ * Heuristics only — worst case a line renders in the default colour.
+ */
+function classify(line) {
+  const t = line.trim();
+  if (/^(✔|✓|ok\b)/.test(t) || /RESULT: contract is live/.test(t)) return 'pass';
+  if (/^(✖|✗|not ok\b|Error\b|error\b)/.test(t)) return 'bad';
+  if (/^▶/.test(t)) return 'head';
+  if (/^(ℹ|# (tests|pass|fail))/.test(t)) return 'info';
+  if (/^(warning|npm warn)/i.test(t)) return 'dim';
+  return '';
+}
+
+/** Strip ANSI escapes, normalise \r\n, collapse spinner \r overwrites. */
+function normalize(raw) {
+  return raw
+    .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '') // CSI sequences
+    .replace(/\x1b\][^\x07\x1b]*(\x07|\x1b\\)/g, '') // OSC titles
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((l) => (l.includes('\r') ? l.split('\r').pop() : l))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\n+$/, '');
+}
+
+/** Run one command for real; return its combined, normalized output. */
+function run(cmd, args) {
+  // Single command string + empty args: required for `shell: true` on
+  // Windows (npm is npm.cmd) without triggering Node's args+shell warning.
+  const res = spawnSync(`${cmd} ${args.join(' ')}`, [], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    shell: true,
+    maxBuffer: 64 * 1024 * 1024,
+    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0' },
+  });
+  if (res.error) throw res.error;
+  const output = normalize(`${res.stdout ?? ''}${res.stderr ?? ''}`);
+  return { code: res.status ?? 1, output };
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
 function html(title, lines) {
   const body = lines
     .map(
       ([cls, text]) =>
-        `<div class="l${cls ? ' ' + cls : ''}">${escapeHtml(text) || '&nbsp;'}</div>`
+        `<div class="l${cls ? ' ' + cls : ''}">${escapeHtml(text) || '&nbsp;'}</div>`,
     )
     .join('\n');
   return `<!doctype html>
@@ -111,10 +108,11 @@ function html(title, lines) {
   .dot { width: 12px; height: 12px; border-radius: 50%; }
   .r { background: #ff5f57; } .y { background: #febc2e; } .g { background: #28c840; }
   .title { color: #8b949e; margin-left: 12px; font-size: 13px; }
-  .l { color: #e6edf3; white-space: pre-wrap; }
+  .l { color: #e6edf3; white-space: pre-wrap; word-break: break-word; }
   .dim { color: #8b949e; }
   .head { color: #d2a8ff; }
   .pass, .ok { color: #3fb950; }
+  .bad { color: #f85149; }
   .info { color: #58a6ff; }
 </style></head>
 <body>
@@ -126,10 +124,6 @@ function html(title, lines) {
 </body></html>`;
 }
 
-function escapeHtml(s) {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
 function findChrome() {
   for (const p of CHROME_CANDIDATES) {
     if (existsSync(p)) return p;
@@ -137,20 +131,34 @@ function findChrome() {
   return null;
 }
 
-mkdirSync(OUT, { recursive: true });
-mkdirSync(TMP, { recursive: true });
+// ── 1. Run every command for real, BEFORE writing any image ──────────────
+const results = [];
+for (const shot of SHOTS) {
+  process.stderr.write(`  running: ${shot.title} ...\n`);
+  const { code, output } = run(shot.cmd, shot.args);
+  if (code !== 0) {
+    process.stderr.write(`\n✖ ${shot.title} exited ${code}. Captured output:\n\n${output}\n`);
+    process.exit(1);
+  }
+  results.push({ ...shot, output });
+}
 
+// ── 2. Render the captured output ────────────────────────────────────────
 const chrome = findChrome();
 if (!chrome) {
-  console.error('No Chrome/Edge found — cannot capture screenshots.');
+  process.stderr.write('No Chrome/Edge found — cannot capture screenshots.\n');
   process.exit(1);
 }
 
-for (const shot of SHOTS) {
+mkdirSync(OUT, { recursive: true });
+mkdirSync(TMP, { recursive: true });
+
+for (const shot of results) {
+  const lines = shot.output.split('\n').map((l) => [classify(l), l]);
   const file = join(TMP, `${shot.name}.html`);
-  writeFileSync(file, html(shot.title, shot.lines));
+  writeFileSync(file, html(shot.title, lines));
   const png = join(OUT, `${shot.name}.png`);
-  const height = Math.max(280, Math.ceil(shot.lines.length * 22) + 110);
+  const height = Math.max(320, Math.ceil(lines.length * 22) + 120);
   const res = spawnSync(
     chrome,
     [
@@ -162,14 +170,14 @@ for (const shot of SHOTS) {
       `--screenshot=${png}`,
       `file:///${file.replace(/\\/g, '/')}`,
     ],
-    { stdio: 'inherit' }
+    { stdio: 'inherit' },
   );
   if (res.status !== 0) {
-    console.error(`chrome failed for ${shot.name}`);
+    process.stderr.write(`chrome failed for ${shot.name}\n`);
     process.exit(1);
   }
-  console.log(`wrote docs/${shot.name}.png`);
+  console.log(`wrote docs/${shot.name}.png (${lines.length} real output lines)`);
 }
 
 rmSync(TMP, { recursive: true, force: true });
-console.log('done');
+console.log('done — all images captured from real command output');

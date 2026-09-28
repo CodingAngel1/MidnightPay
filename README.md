@@ -200,5 +200,8 @@ payment settlement where the payer, not the chain, decides what the world gets t
 
 ![npm run verify](docs/verify.png)
 
-> Regenerate with `node scripts/screenshots.mjs` (uses headless Chrome) so the
-> images always match the current output.
+> These images are captured from **real command output**, not hand-written:
+> `node scripts/screenshots.mjs` runs `npm run compile`, `npm test` and
+> `npm run verify`, captures each command's actual stdout/stderr (refusing to
+> write an image if a command fails), and photographs that with headless
+> Chrome. Re-run it after any change so the images match the repo.
