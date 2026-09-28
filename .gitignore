@@ -14,3 +14,6 @@ deploy*.log
 
 # local progress notes (never commit)
 PROGRESS.md
+
+# generated ZK artifacts (rebuilt by 'npm run zk:sync' before every build)
+public/zk/
