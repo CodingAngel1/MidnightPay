@@ -9,8 +9,14 @@
 | Preview  | `522079c2760b58d0e098c5a2d8f04a1d6e6340f8baf7a190376204378307415d` |
 | Preprod  | `1116f337c369f190a8f3838d617e15fd1df9123e8ed268c84e236a367bfbab10` |
 
-Deployer address (preprod):
-`mn_addr_preprod1nqwdmsv67cnllvlf4sfnamus7ewtsxcxyy7n3jtrkdq25529wtdq6wnpjm`
+### Deployer Addresses
+
+The wallets that submitted each deployment transaction:
+
+| Network | Deployer |
+|---------|----------|
+| Preview | `mn_addr_preview12j6n7uf2wmg76e2806mvfkhxhpfel26xf7harkt5x7cy6ert0eyqlpg64q` |
+| Preprod | `mn_addr_preprod1nqwdmsv67cnllvlf4sfnamus7ewtsxcxyy7n3jtrkdq25529wtdq6wnpjm` |
 
 ## What This Does
 
