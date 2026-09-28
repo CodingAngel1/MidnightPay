@@ -7,7 +7,10 @@
 | Network  | Address                          |
 |----------|----------------------------------|
 | Preview  | `522079c2760b58d0e098c5a2d8f04a1d6e6340f8baf7a190376204378307415d` |
-| Preprod  | [PASTE ADDRESS AFTER DEPLOY]     |
+| Preprod  | `1116f337c369f190a8f3838d617e15fd1df9123e8ed268c84e236a367bfbab10` |
+
+Deployer address (preprod):
+`mn_addr_preprod1nqwdmsv67cnllvlf4sfnamus7ewtsxcxyy7n3jtrkdq25529wtdq6wnpjm`
 
 ## What This Does
 
@@ -62,7 +65,7 @@ explicitly publish.
 | Docker Desktop | Running daemon, `docker ps` succeeds |
 | Compact compiler | `compact --version` prints a version number (Linux/macOS). On Windows there is no native binary — `npm run compile` falls back to compiling inside Docker automatically. |
 | Git | For cloning and committing |
-| Midnight faucet funds | Preview faucet: https://midnight-tmnight-preview.nethermind.dev/ |
+| Faucet tNIGHT | Preview: https://midnight-tmnight-preview.nethermind.dev/ — Preprod: https://faucet.preprod.midnight.network (both require the Cloudflare Turnstile, so use the browser UI) |
 
 ## Setup
 
@@ -91,7 +94,26 @@ NODE_OPTIONS="--max-old-space-size=12288" npm run deploy -- --network preview
 
 # Select the active network for later commands
 npm run network preview
+
+# ── Or deploy to preprod ──────────────────────────────────────────────────────
+# 1. Pick the network, then read the address to fund (no sync needed):
+npm run network preprod
+npx tsx src/fund-address.ts          # prints the bech32 address + faucet URL
+
+# 2. Fund it at https://faucet.preprod.midnight.network (browser; Turnstile).
+
+# 3. Deploy. First sync on a brand-new preprod address replays the whole
+#    private-ledger history from the indexer (the dust ledger alone is
+#    ~1.5M events) — expect roughly 3–4 hours of sustained CPU, then the
+#    deploy itself takes seconds. The wallet writes checkpoints to
+#    .midnight-wallet-state/ only AFTER a successful sync, so an
+#    interrupted first run starts over: run it detached (nohup / start)
+#    and do not let your session die mid-sync.
+NODE_OPTIONS="--max-old-space-size=12288" npm run deploy -- --network preprod
 ```
+
+> After the first successful preprod sync the state is cached, so any later
+> re-deploy resumes in seconds instead of hours.
 
 > **Compiler version is pinned to `0.31.1`.** It is the release whose
 > `runtime-version` is `0.16.0`, which is exactly what `@midnight-ntwrk/compact-runtime`
@@ -115,20 +137,25 @@ The suite has two layers:
 
 ## Verify the Deployment
 
-Read the public ledger back from the indexer to prove the contract is live:
+Read the public ledger back from the indexer to prove the contract is live.
+`npm run verify` uses the active network from `.midnight-state.json`
+(`npm run network <name>` to switch):
 
 ```bash
 npm run verify
 ```
 
-Expected output for a freshly deployed contract:
+Expected output for a freshly deployed contract (active network: preprod):
 
 ```
-network : preview
-address : 522079c2760b58d0e098c5a2d8f04a1d6e6340f8baf7a190376204378307415d
+network : preprod
+address : 1116f337c369f190a8f3838d617e15fd1df9123e8ed268c84e236a367bfbab10
 ledger  : { payment_count: '0', disclosed_total: '0' }
 RESULT: contract is live and readable
 ```
+
+On preview the same command prints `network : preview` and the preview
+address from the table above.
 
 `payment_count` and `disclosed_total` are the two public ledger fields — both
 start at zero and only change when `pay()` settles a payment. Nothing else about
@@ -160,7 +187,7 @@ payment settlement where the payer, not the chain, decides what the world gets t
 
 ![npm test](docs/tests.png)
 
-**On-chain verification** — `npm run verify` (public ledger read back from the preview indexer):
+**On-chain verification** — `npm run verify` (public ledger read back from the preprod indexer):
 
 ![npm run verify](docs/verify.png)
 
