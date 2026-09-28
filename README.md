@@ -249,7 +249,7 @@ payment settlement where the payer, not the chain, decides what the world gets t
 
 ## Demo Video
 
-`docs/demo.mp4` — screen recording of the full flow:
+Walkthrough to capture for the demo recording (mirror of the live demo):
 
 1. Open https://midnightpay.vercel.app with Lace installed and on **Preprod**.
 2. Press **Connect Lace wallet**, approve in the extension, show the shielded address.
