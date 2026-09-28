@@ -2,6 +2,23 @@
 
 > A privacy-preserving payment counter for the Midnight Network — settle payments where the amount travels only when the payer chooses to disclose it.
 
+## Live Demo
+
+**https://midnightpay.vercel.app** — deployed on Vercel, built from `main`.
+
+Connect Lace for Midnight on **Preprod**, fill in the two private inputs, and press
+*Generate proof & submit pay()*. The page shows every phase as it happens
+(witness → prove → balance → submit → finalise), proves locally inside your
+wallet, and then prints only the public footprint: transaction, block, fees and
+the two ledger fields.
+
+| | |
+|---|---|
+| Demo | https://midnightpay.vercel.app |
+| Repository | https://github.com/CodingAngel1/MidnightPay |
+| Network | Preprod |
+| Contract | `1116f337c369f190a8f3838d617e15fd1df9123e8ed268c84e236a367bfbab10` |
+
 ## Contract Address
 
 | Network  | Address                          |
@@ -54,6 +71,12 @@ explicitly publish.
   - That the private payment amount is strictly positive.
   - That the resulting public ledger update follows the contract rules.
 
+**Claim:** MidnightPay's web front end never renders, logs or transmits either
+private input. Both are collected through masked fields, cleared from the DOM
+before proving begins, written only to the browser's encrypted local store, and
+handed straight to the local witnesses. The result panel carries public data and
+says so in plain words: *Proved without revealing your input*.
+
 ## Tech Stack
 
 - **Midnight network** — privacy-first L1 for zero-knowledge smart contracts
@@ -62,6 +85,9 @@ explicitly publish.
 - **Docker** — proof server + local devnet (`midnightntwrk/proof-server:8.1.0`)
 - **Compact compiler** — `compact compile` generates `managed/counter/`
 - **midnight.js SDK** — `@midnight-ntwrk/compact-runtime`, `@midnight-ntwrk/midnight-js-*`
+- **React 19 + Vite 8** — the browser front end (`src/App.tsx`, `src/components/`, `src/hooks/`)
+- **DApp Connector API** — `@midnight-ntwrk/dapp-connector-api` for Lace connect/disconnect
+- **Vercel** — hosting, configured by `vercel.json`
 
 ## Prerequisites
 
@@ -72,6 +98,7 @@ explicitly publish.
 | Compact compiler | Linux/macOS: `compact --version` prints a version number. **On Windows there is no native binary** — and `compact` on PATH is usually `C:\Windows\system32\compact.exe`, which is Windows' *disk-compression* utility, not the Compact compiler (it happily prints a version number and fools the check). `npm run compile` detects the missing compiler and builds/runs the container in `scripts/Dockerfile.compact` instead, so on Windows just run `npm run compile`. |
 | Git | For cloning and committing |
 | Faucet tNIGHT | Preview: https://midnight-tmnight-preview.nethermind.dev/ — Preprod: https://faucet.preprod.midnight.network (both require the Cloudflare Turnstile, so use the browser UI) |
+| Lace for Midnight | Browser wallet for the demo — https://docs.midnight.network/relnotes/lace. Installed and switched to **Preprod** before pressing *Connect*. |
 
 ## Setup
 
@@ -129,6 +156,40 @@ NODE_OPTIONS="--max-old-space-size=12288" npm run deploy -- --network preprod
 > 0.16.0 in `package.json` expects. Compiling with a newer compiler (0.34.0 emits
 > runtime 0.19.0) makes the test suite fail with a version-mismatch error.
 
+## Run the Web App
+
+The front end needs no proof server: Lace proves in the extension, the contract
+module and ZK keys come from this repo.
+
+```bash
+# one-time: compile so managed/counter/{keys,zkir} exist
+npm run compile
+
+npm run dev              # copies ZK keys into public/zk, serves http://localhost:5173
+npm run build:frontend   # production bundle in dist/ (same command Vercel runs)
+npm run typecheck        # tsc --noEmit over the node scripts and the React app
+```
+
+Source layout:
+
+| Path | Role |
+|------|------|
+| `src/App.tsx`, `src/main.tsx` | page shell and React entry point |
+| `src/components/WalletConnect.tsx` | Lace connect/disconnect + the three failure states |
+| `src/components/CircuitCall.tsx` | private inputs, phase list, public result panel |
+| `src/hooks/useMidnight.ts` | wallet discovery, connection lifecycle, cached providers |
+| `src/lib/providers.ts` | assembles the Midnight.js provider set in the browser |
+| `src/lib/callPay.ts` | witness → prove → balance → submit → finalise |
+| `src/lib/config.ts` | contract address, network id, endpoints |
+| `scripts/sync-zk-assets.mjs` | `managed/counter` → `public/zk` before dev/build |
+| `vercel.json` | build command, SPA rewrite, cache headers for the ZK keys |
+
+> **Deviation from the level brief:** `@midnight-ntwrk/midnight-js-network-provider`
+> does not exist on npm (404), so the umbrella `@midnight-ntwrk/midnight-js` and its
+> `@midnight-ntwrk/midnight-js-*` sub-packages are used instead. Vite also builds with
+> rolldown, so the rollup-only `vite-plugin-top-level-await` was dropped in favour of
+> `build.target: 'esnext'`.
+
 ## Run Tests
 
 ```bash
@@ -185,6 +246,23 @@ non-zero secret) without ever revealing either value.
 
 That split is the whole product: privacy by default, disclosure by choice —
 payment settlement where the payer, not the chain, decides what the world gets to know.
+
+## Demo Video
+
+`docs/demo.mp4` — screen recording of the full flow:
+
+1. Open https://midnightpay.vercel.app with Lace installed and on **Preprod**.
+2. Press **Connect Lace wallet**, approve in the extension, show the shielded address.
+3. Enter a payment amount and a fresh authorisation secret — both masked.
+4. Press **Generate proof & submit pay()** and let the phase list run through
+   witness → proving → balancing → submitting → finalising.
+5. Show the result panel: transaction, block, fees, where the proof was produced,
+   and `payment_count` / `disclosed_total` — with the private inputs already gone
+   from the page.
+
+To re-record it yourself, open DevTools → Elements while step 4 runs: the two
+password inputs are empty before the first phase starts, and no private value
+appears anywhere in the component tree, the console or the network tab.
 
 ## Screenshots
 
