@@ -69,7 +69,7 @@ explicitly publish.
 |-------------|-------|
 | Node.js 22+ | `node --version` |
 | Docker Desktop | Running daemon, `docker ps` succeeds |
-| Compact compiler | `compact --version` prints a version number (Linux/macOS). On Windows there is no native binary — `npm run compile` falls back to compiling inside Docker automatically. |
+| Compact compiler | Linux/macOS: `compact --version` prints a version number. **On Windows there is no native binary** — and `compact` on PATH is usually `C:\Windows\system32\compact.exe`, which is Windows' *disk-compression* utility, not the Compact compiler (it happily prints a version number and fools the check). `npm run compile` detects the missing compiler and builds/runs the container in `scripts/Dockerfile.compact` instead, so on Windows just run `npm run compile`. |
 | Git | For cloning and committing |
 | Faucet tNIGHT | Preview: https://midnight-tmnight-preview.nethermind.dev/ — Preprod: https://faucet.preprod.midnight.network (both require the Cloudflare Turnstile, so use the browser UI) |
 
@@ -88,9 +88,12 @@ npm install
 # Windows: skip the above. `npm run compile` detects the missing compiler and
 # builds/runs the container defined in scripts/Dockerfile.compact instead.
 
-# Proof server (pinned to 8.1.0 to match the Midnight.js 4.1.1 SDK)
+# Proof server (pinned to 8.1.0 to match the Midnight.js 4.1.1 SDK).
+# Start it through compose: it creates exactly one container,
+# `midnightpay-proof-server`. A bare `docker run --name midnight-proof-server`
+# produces a second copy that stays behind Exited (255) after Docker restarts.
 docker pull midnightntwrk/proof-server:8.1.0
-docker run -d --name midnight-proof-server -p 6300:6300 midnightntwrk/proof-server:8.1.0
+docker compose up -d proof-server     # only the proof server — not the devnet
 
 # Compile the contract -> managed/counter/
 npm run compile
