@@ -17,3 +17,5 @@ PROGRESS.md
 
 # generated ZK artifacts (rebuilt by 'npm run zk:sync' before every build)
 public/zk/
+
+.vercel
