@@ -280,7 +280,17 @@ payment settlement where the payer, not the chain, decides what the world gets t
 
 ## Demo Video
 
-[PLACEHOLDER — I will add the link after recording]
+**App walkthrough (18s)** — real screen capture of the built dApp, recorded headlessly
+from this repo (`node scripts/record-walkthrough.mjs` after `npm run build:frontend`):
+
+![MidnightPay walkthrough](docs/app-walkthrough.mp4)
+
+It shows the page exactly as a first-time visitor sees it: the wallet card with the
+"No Midnight wallet detected" alert and install link, the circuit card with the Preprod
+contract address, masked private inputs, the *Proved without revealing your input* label
+and the phase list, the privacy model, and the deployment facts.
+
+**Full demo with Lace wallet:** [PLACEHOLDER — I will add the link after recording]
 
 Recording checklist (under 2 minutes):
 
