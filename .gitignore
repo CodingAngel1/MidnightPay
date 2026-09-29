@@ -19,3 +19,7 @@ PROGRESS.md
 public/zk/
 
 .vercel
+
+# local screen-recording scratch frames
+.demo-frames/
+.walkthrough/
