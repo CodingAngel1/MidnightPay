@@ -21,6 +21,7 @@
     "network": "npx tsx src/network.ts",
     "screenshots": "node scripts/screenshots.mjs",
     "record:demo": "node scripts/record-demo.mjs",
+    "record:shot1": "node scripts/record-shot1.mjs",
     "proof-server:start": "docker compose up -d",
     "proof-server:stop": "docker compose down",
     "test": "npx tsx --test tests/counter.test.ts"
