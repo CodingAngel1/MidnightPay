@@ -71,6 +71,17 @@ explicitly publish.
   - That the private payment amount is strictly positive.
   - That the resulting public ledger update follows the contract rules.
 
+## Privacy Claim
+
+**What an on-chain observer sees:** the settled `payment_count`, the
+`disclosed_total` the payer chose to publish, and the transaction's own footprint
+(transaction id, block height, block hash, fees). Nothing else.
+
+**What an on-chain observer cannot see:** the payment amount and the payer's
+authorisation secret. Both exist only in the payer's browser as circuit
+witnesses — the proof asserts they satisfy the contract rules without revealing
+them, so no amount of chain inspection recovers either value.
+
 **Claim:** MidnightPay's web front end never renders, logs or transmits either
 private input. Both are collected through masked fields, cleared from the DOM
 before proving begins, written only to the browser's encrypted local store, and
@@ -100,7 +111,7 @@ says so in plain words: *Proved without revealing your input*.
 | Faucet tNIGHT | Preview: https://midnight-tmnight-preview.nethermind.dev/ — Preprod: https://faucet.preprod.midnight.network (both require the Cloudflare Turnstile, so use the browser UI) |
 | Lace for Midnight | Browser wallet for the demo — https://docs.midnight.network/relnotes/lace. Installed and switched to **Preprod** before pressing *Connect*. |
 
-## Setup
+## Run Locally
 
 ```bash
 git clone https://github.com/CodingAngel1/MidnightPay.git
@@ -190,6 +201,26 @@ Source layout:
 > rolldown, so the rollup-only `vite-plugin-top-level-await` was dropped in favour of
 > `build.target: 'esnext'`.
 
+## Deploy to Vercel
+
+`vercel.json` pins the framework, install, build and output settings; the SPA
+rewrite keeps deep links working and the cache headers serve the ZK keys. The
+deployed site talks to the Preprod contract address declared in
+`src/lib/config.ts` — no environment variable is required.
+
+```bash
+npm i -g vercel      # one-time
+vercel login         # opens the browser
+vercel --prod        # builds with npm run build:frontend, deploys to production
+```
+
+Optional: for browsers whose wallet cannot prove locally, add a remote prover
+with `vercel env add VITE_PROOF_SERVER_URL` (leave unset otherwise — the
+wallet's own prover is preferred because the witness never leaves the machine).
+
+Live URL: **https://midnightpay.vercel.app** — connected to the Preprod contract
+`1116f337c369f190a8f3838d617e15fd1df9123e8ed268c84e236a367bfbab10`.
+
 ## Run Tests
 
 ```bash
@@ -249,7 +280,16 @@ payment settlement where the payer, not the chain, decides what the world gets t
 
 ## Demo Video
 
-Walkthrough to capture for the demo recording (mirror of the live demo):
+[PLACEHOLDER — I will add the link after recording]
+
+Recording checklist (under 2 minutes):
+
+1. Connect Lace wallet — show the address appear on screen.
+2. Call the circuit — show the loading state during proof generation.
+3. Show the on-chain result after submission.
+4. Point out that the private input was never shown.
+
+Shot-by-shot detail (mirror of the live demo):
 
 1. Open https://midnightpay.vercel.app with Lace installed and on **Preprod**.
 2. Press **Connect Lace wallet**, approve in the extension, show the shielded address.
