@@ -304,6 +304,12 @@ payment settlement where the payer, not the chain, decides what the world gets t
 
 ## Demo Video
 
+**Level 3 reel (32s)** — the three proof shots from the level checklist, all captured
+from real data by `node scripts/record-level3-reel.mjs`: the built dApp, a live
+`npm test` run (9/9 passing), and the green CI run for the exact commit:
+
+![MidnightPay Level 3 reel](docs/level3-reel.mp4)
+
 **App walkthrough (18s)** — real screen capture of the built dApp, recorded headlessly
 from this repo (`node scripts/record-walkthrough.mjs` after `npm run build:frontend`):
 
