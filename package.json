@@ -12,7 +12,7 @@
     "dev": "npm run zk:sync && vite",
     "build:frontend": "npm run zk:sync && vite build",
     "preview": "vite preview",
-    "build": "npx tsc --noEmit || true",
+    "build": "npm run build:frontend",
     "setup": "npx tsx src/setup.ts",
     "deploy": "npx tsx src/deploy.ts",
     "verify": "npx tsx src/verify.ts",
