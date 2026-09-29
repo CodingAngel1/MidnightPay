@@ -298,11 +298,16 @@ export default function CircuitCall({ wallet }: CircuitCallProps) {
             onClick={() => void submit()}
             disabled={busy}
           >
-            {busy
-              ? PHASE_LABEL[phase]
-              : outcome
-                ? 'Call pay() again'
-                : 'Generate proof & submit pay()'}
+            {busy ? (
+              <>
+                <span className="btn-spin" aria-hidden="true" />
+                {PHASE_LABEL[phase]}
+              </>
+            ) : outcome ? (
+              'Call pay() again'
+            ) : (
+              'Generate proof & submit pay()'
+            )}
           </button>
         )}
         {(outcome || error) && !busy && (
