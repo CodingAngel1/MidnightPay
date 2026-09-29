@@ -1,5 +1,7 @@
 # MidnightPay
 
+[![CI](https://github.com/CodingAngel1/MidnightPay/actions/workflows/ci.yml/badge.svg)](https://github.com/CodingAngel1/MidnightPay/actions/workflows/ci.yml)
+
 > A privacy-preserving payment counter for the Midnight Network — settle payments where the amount travels only when the payer chooses to disclose it.
 
 ## Live Demo
@@ -66,7 +68,7 @@ explicitly publish.
   - Neither value is ever passed to `disclose()`; the compiler rejects any
     accidental leak of witness-derived data as a compile-time error.
 
-- **What the user PROVES without revealing:**
+- **PROVED without revealing (zero-knowledge):**
   - That they know a non-zero authorisation secret (asserted, never disclosed).
   - That the private payment amount is strictly positive.
   - That the resulting public ledger update follows the contract rules.
@@ -111,7 +113,7 @@ says so in plain words: *Proved without revealing your input*.
 | Faucet tNIGHT | Preview: https://midnight-tmnight-preview.nethermind.dev/ — Preprod: https://faucet.preprod.midnight.network (both require the Cloudflare Turnstile, so use the browser UI) |
 | Lace for Midnight | Browser wallet for the demo — https://docs.midnight.network/relnotes/lace. Installed and switched to **Preprod** before pressing *Connect*. |
 
-## Run Locally
+## Setup & Run Locally
 
 ```bash
 git clone https://github.com/CodingAngel1/MidnightPay.git
@@ -167,7 +169,7 @@ NODE_OPTIONS="--max-old-space-size=12288" npm run deploy -- --network preprod
 > 0.16.0 in `package.json` expects. Compiling with a newer compiler (0.34.0 emits
 > runtime 0.19.0) makes the test suite fail with a version-mismatch error.
 
-## Run the Web App
+### Run the Web App
 
 The front end needs no proof server: Lace proves in the extension, the contract
 module and ZK keys come from this repo.
@@ -201,7 +203,7 @@ Source layout:
 > rolldown, so the rollup-only `vite-plugin-top-level-await` was dropped in favour of
 > `build.target: 'esnext'`.
 
-## Deploy to Vercel
+### Deploy to Vercel
 
 `vercel.json` pins the framework, install, build and output settings; the SPA
 rewrite keeps deep links working and the cache headers serve the ZK keys. The
@@ -236,7 +238,7 @@ The suite has two layers:
   simulator: initial state, state transitions, rejected inputs, and that private
   inputs never reach the public ledger.
 
-## Verify the Deployment
+### Verify the Deployment
 
 Read the public ledger back from the indexer to prove the contract is live.
 `npm run verify` uses the active network from `.midnight-state.json`
@@ -261,6 +263,28 @@ address from the table above.
 `payment_count` and `disclosed_total` are the two public ledger fields — both
 start at zero and only change when `pay()` settles a payment. Nothing else about
 a payment ever reaches the chain.
+
+## CI/CD
+
+The badge under the title reports this pipeline. On every push to `main` and every
+pull request, GitHub Actions:
+
+1. checks out the repo and installs Node.js 22 (with npm caching),
+2. `npm ci` — clean, lockfile-exact dependencies,
+3. installs the Compact compiler pinned to `0.31.1`,
+4. compiles `contracts/counter.compact` → `managed/counter/` (`npm run compile`),
+5. typechecks the node scripts and the React app (`tsc --noEmit`),
+6. runs the 9-test suite (`npm test`) — the compiled-circuit layer executes for
+   real here, because the compiler ran first,
+7. builds the production front end (`npm run build:frontend`).
+
+A red badge means one of those gates failed; a green badge means compile, tests
+and build all passed on that exact commit.
+
+## Product Proposal
+
+The product pitch, the data model and the mainnet feasibility assessment live in
+[PROPOSAL.md](PROPOSAL.md).
 
 ## Initial Idea
 
